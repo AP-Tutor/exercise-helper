@@ -1,0 +1,79 @@
+name: Compile
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: write
+  pull-requests: read
+
+jobs:
+  release:
+    name: Release - ${{ matrix.platform.target }}
+    strategy:
+      matrix:
+        platform:
+          - os_name: Windows-x86_64
+            os: windows-latest
+            target: x86_64-pc-windows-msvc
+            extension: .exe
+            local: true
+
+          - os_name: macOS-x86_64
+            os: macos-12
+            target: x86_64-apple-darwin
+            local: true
+
+          - os_name: macOS-x86_64
+            os: macos-12
+            target: aarch64-apple-darwin
+            local: true
+
+          - os_name: linux-musl-x86_64
+            os: ubuntu-latest
+            target: x86_64-unknown-linux-musl
+
+          - os_name: linux-musl-arm
+            os: ubuntu-latest
+            target: arm-unknown-linux-musleabi
+
+    runs-on: ${{ matrix.platform.os }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      
+
+      - name: Install toolchain
+        if: ${{ matrix.platform.local}}
+        run: rustup target add ${{ matrix.platform.target }}
+      - name: Build binary
+        if: ${{ matrix.platform.local}}
+        run: cargo build --locked --release --target ${{ matrix.platform.target }}
+
+      - uses: cargo-bins/cargo-binstall@main
+        if: ${{ !matrix.platform.local}}
+      - name: Install cross
+        if: ${{ !matrix.platform.local}}
+        run: cargo binstall cross -y
+      - name: Build binary
+        if: ${{ !matrix.platform.local}}
+        run: cross build --locked --release --target ${{ matrix.platform.target }}
+
+        #uses: houseabsolute/actions-rust-cross@v0
+        #with:
+          #command: ${{ matrix.platform.command }}
+        #  target: ${{ matrix.platform.target }}
+        #  args: "--locked --release"
+        #  strip: true
+      - name: Upload binaries to release
+        uses: svenstaro/upload-release-action@v2
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          file: target/${{ matrix.platform.target }}/release/deploy${{ matrix.platform.extension }}
+          asset_name: deploy-${{ matrix.platform.target }}${{ matrix.platform.extension }}
+          tag: ${{ github.ref }}
+          overwrite: true
+
+          
