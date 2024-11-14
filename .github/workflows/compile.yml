@@ -50,7 +50,7 @@ jobs:
         run: rustup target add ${{ matrix.platform.target }}
       - name: Build binary
         if: ${{ matrix.platform.local}}
-        run: cargo build --frozen --locked --release --target ${{ matrix.platform.target }}
+        run: cargo build --target ${{ matrix.platform.target }}
 
       - uses: cargo-bins/cargo-binstall@main
         if: ${{ !matrix.platform.local}}
@@ -59,7 +59,7 @@ jobs:
         run: cargo binstall cross -y
       - name: Build binary
         if: ${{ !matrix.platform.local}}
-        run: cross build --frozen --locked --release --target ${{ matrix.platform.target }}
+        run: cross build  --target ${{ matrix.platform.target }}
 
         #uses: houseabsolute/actions-rust-cross@v0
         #with:
